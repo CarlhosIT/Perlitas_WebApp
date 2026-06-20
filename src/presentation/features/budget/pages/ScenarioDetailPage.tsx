@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/presentation/components/ui/button'
 import { Alert, AlertDescription } from '@/presentation/components/ui/alert'
@@ -16,6 +16,10 @@ export function ScenarioDetailPage() {
   const navigate = useNavigate()
   const scenarioId = Number(id)
 
+  if (isNaN(scenarioId) || scenarioId <= 0) {
+    return <Navigate to="/scenarios" replace />
+  }
+
   const { data: scenario, isLoading, error } = useGetScenario(scenarioId)
   const uploadLinesMutation = useUploadLines(scenarioId)
   const importMutation = useImportBudget()
@@ -24,6 +28,7 @@ export function ScenarioDetailPage() {
   const uploadError =
     (uploadLinesMutation.error as Error | null)?.message ??
     (importMutation.error as Error | null)?.message ??
+    (downloadMutation.error as Error | null)?.message ??
     null
 
   if (isLoading) return <p className="text-muted-foreground">Cargando...</p>
