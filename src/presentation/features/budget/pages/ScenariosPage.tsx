@@ -104,6 +104,13 @@ export function ScenariosPage() {
               {editTarget ? 'Editar Escenario' : 'Nuevo Escenario'}
             </DialogTitle>
           </DialogHeader>
+          {(createMutation.error || updateMutation.error) && (
+            <Alert variant="destructive" className="mb-2">
+              <AlertDescription>
+                {((createMutation.error ?? updateMutation.error) as Error).message}
+              </AlertDescription>
+            </Alert>
+          )}
           <ScenarioForm
             defaultValues={editTarget ?? undefined}
             onSubmit={handleSubmit}
@@ -121,6 +128,13 @@ export function ScenariosPage() {
         onCancel={() => setDeleteTarget(null)}
         isLoading={deleteMutation.isPending}
       />
+      {deleteMutation.error && (
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>
+            {(deleteMutation.error as Error).message}
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   )
 }

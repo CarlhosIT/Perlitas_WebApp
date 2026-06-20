@@ -15,15 +15,15 @@ const scenarioSchema = z.object({
   initialRatioPercentage: z
     .string()
     .min(1, 'El ratio inicial es requerido')
-    .refine((v) => !isNaN(Number(v)), 'Debe ser un número')
-    .refine((v) => Number(v) >= 0, 'Mínimo 0')
-    .refine((v) => Number(v) <= 100, 'Máximo 100'),
+    .refine((v) => !isNaN(Number(v.trim())) && v.trim() !== '', 'Debe ser un número')
+    .refine((v) => Number(v.trim()) >= 0, 'Mínimo 0')
+    .refine((v) => Number(v.trim()) <= 100, 'Máximo 100'),
   additionalRatioPercentage: z
     .string()
     .min(1, 'El ratio adicional es requerido')
-    .refine((v) => !isNaN(Number(v)), 'Debe ser un número')
-    .refine((v) => Number(v) >= 0, 'Mínimo 0')
-    .refine((v) => Number(v) <= 100, 'Máximo 100'),
+    .refine((v) => !isNaN(Number(v.trim())) && v.trim() !== '', 'Debe ser un número')
+    .refine((v) => Number(v.trim()) >= 0, 'Mínimo 0')
+    .refine((v) => Number(v.trim()) <= 100, 'Máximo 100'),
   startOfFiscalYear: z.string().min(1, 'La fecha de inicio es requerida'),
 })
 
@@ -59,8 +59,8 @@ export function ScenarioForm({ defaultValues, onSubmit, onCancel, isLoading }: S
   function handleValidSubmit(raw: ScenarioFormRaw) {
     onSubmit({
       name: raw.name,
-      initialRatioPercentage: Number(raw.initialRatioPercentage),
-      additionalRatioPercentage: Number(raw.additionalRatioPercentage),
+      initialRatioPercentage: Number(raw.initialRatioPercentage.trim()),
+      additionalRatioPercentage: Number(raw.additionalRatioPercentage.trim()),
       startOfFiscalYear: raw.startOfFiscalYear,
     })
   }
