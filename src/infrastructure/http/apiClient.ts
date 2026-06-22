@@ -49,10 +49,12 @@ apiClient.interceptors.response.use(
           )
           if (refreshResponse.data.succeeded) {
             const result = refreshResponse.data.data
-            tokenStorage.setTokens(result.accessToken!, result.refreshToken!)
-            tokenStorage.setUser(result.user)
-            originalRequest.headers['Authorization'] = `Bearer ${result.accessToken}`
-            return apiClient(originalRequest)
+            if (result) {
+              tokenStorage.setTokens(result.accessToken!, result.refreshToken!)
+              tokenStorage.setUser(result.user)
+              originalRequest.headers['Authorization'] = `Bearer ${result.accessToken}`
+              return apiClient(originalRequest)
+            }
           }
         } catch {
           // refresh falló — limpiar y redirigir
@@ -60,8 +62,9 @@ apiClient.interceptors.response.use(
       }
 
       tokenStorage.clear()
+      const sessionErr = new Error('Sesión expirada. Por favor inicia sesión nuevamente.')
       window.location.href = '/login'
-      return Promise.reject(new Error('Sesión expirada. Por favor inicia sesión nuevamente.'))
+      return Promise.reject(sessionErr)
     }
 
     // Normalizar mensaje de error
