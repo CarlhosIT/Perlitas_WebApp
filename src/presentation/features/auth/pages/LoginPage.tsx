@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate } from 'react-router-dom'
+import type { LoginCommand } from '@/domain/auth/Auth.types'
 import { Button } from '@/presentation/components/ui/button'
 import { Input } from '@/presentation/components/ui/input'
 import { Label } from '@/presentation/components/ui/label'
@@ -15,7 +16,7 @@ import hero from '@/assets/hero.jpg'
 const loginSchema = z.object({
   userName: z.string().min(1, 'Ingresa tu usuario'),
   password: z.string().min(1, 'Ingresa tu contraseña'),
-})
+}) satisfies z.ZodType<LoginCommand>
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
@@ -56,7 +57,9 @@ export function LoginPage() {
               {loginMutation.isError && (
                 <Alert variant="destructive">
                   <AlertDescription>
-                    {(loginMutation.error as Error).message}
+                    {loginMutation.error instanceof Error
+                      ? loginMutation.error.message
+                      : 'Error al iniciar sesión'}
                   </AlertDescription>
                 </Alert>
               )}
