@@ -19,22 +19,26 @@ export function ScenarioCard({ scenario, onEdit, onDelete }: ScenarioCardProps) 
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <CardTitle className="text-base">{scenario.name}</CardTitle>
-          <Badge variant="secondary">#{scenario.numerator}</Badge>
+          <Badge variant="secondary">#{scenario.absId}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
           <span>Ratio inicial:</span>
-          <span className="font-medium text-foreground">{scenario.initialRatioPercentage}%</span>
-          <span>Ratio adicional:</span>
-          <span className="font-medium text-foreground">{scenario.additionalRatioPercentage}%</span>
+          <span className="font-medium text-foreground">{scenario.initRate ?? 0}%</span>
           <span>Año fiscal:</span>
           <span className="font-medium text-foreground">
-            {new Date(scenario.startOfFiscalYear).toLocaleDateString('es-ES')}
+            {new Date(scenario.financYear).toLocaleDateString('es-ES')}
           </span>
+          {scenario.baseId != null && (
+            <>
+              <span>Escenario base:</span>
+              <span className="font-medium text-foreground">#{scenario.baseId}</span>
+            </>
+          )}
         </div>
         <div className="flex gap-2 pt-1">
-          <Button size="sm" variant="outline" onClick={() => navigate(`/scenarios/${scenario.numerator}`)}>
+          <Button size="sm" variant="outline" onClick={() => navigate(`/scenarios/${scenario.absId}`)}>
             <Eye className="h-3.5 w-3.5 mr-1" /> Ver
           </Button>
           <Button size="sm" variant="outline" onClick={() => onEdit(scenario)}>

@@ -7,63 +7,75 @@ import {
   Form, FormControl, FormField, FormItem,
   FormLabel, FormMessage,
 } from '@/presentation/components/ui/form'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/presentation/components/ui/select'
 import type { BudgetScenario } from '@/domain/budget/BudgetScenario.types'
 
-// Use string-based numeric fields to avoid Zod v4 z.coerce input-type mismatch with RHF v7
 const scenarioSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
-  initialRatioPercentage: z
+  initRate: z
     .string()
-    .min(1, 'El ratio inicial es requerido')
+    .min(1, 'El ratio es requerido')
     .refine((v) => !isNaN(Number(v.trim())) && v.trim() !== '', 'Debe ser un número')
     .refine((v) => Number(v.trim()) >= 0, 'Mínimo 0')
     .refine((v) => Number(v.trim()) <= 100, 'Máximo 100'),
-  additionalRatioPercentage: z
-    .string()
-    .min(1, 'El ratio adicional es requerido')
-    .refine((v) => !isNaN(Number(v.trim())) && v.trim() !== '', 'Debe ser un número')
-    .refine((v) => Number(v.trim()) >= 0, 'Mínimo 0')
-    .refine((v) => Number(v.trim()) <= 100, 'Máximo 100'),
-  startOfFiscalYear: z.string().min(1, 'La fecha de inicio es requerida'),
+  financYear: z.string().min(1, 'La fecha de inicio es requerida'),
+  baseId: z.string().optional(),
+  ocrCode: z.string().optional(),
 })
 
 type ScenarioFormRaw = z.infer<typeof scenarioSchema>
 
 export interface ScenarioFormValues {
   name: string
-  initialRatioPercentage: number
-  additionalRatioPercentage: number
-  startOfFiscalYear: string
+  initRate: number
+  financYear: string
+  baseId: number | null
+  ocrCode: string | null
 }
 
 interface ScenarioFormProps {
   defaultValues?: Partial<BudgetScenario>
+  scenarios?: BudgetScenario[]
   onSubmit: (values: ScenarioFormValues) => void
   onCancel: () => void
   isLoading?: boolean
 }
 
-export function ScenarioForm({ defaultValues, onSubmit, onCancel, isLoading }: ScenarioFormProps) {
+export function ScenarioForm({
+  defaultValues,
+  scenarios,
+  onSubmit,
+  onCancel,
+  isLoading,
+}: ScenarioFormProps) {
   const form = useForm<ScenarioFormRaw>({
     resolver: zodResolver(scenarioSchema),
     defaultValues: {
       name: defaultValues?.name ?? '',
-      initialRatioPercentage: String(defaultValues?.initialRatioPercentage ?? 0),
-      additionalRatioPercentage: String(defaultValues?.additionalRatioPercentage ?? 0),
-      startOfFiscalYear: defaultValues?.startOfFiscalYear
-        ? defaultValues.startOfFiscalYear.substring(0, 10)
+      initRate: String(defaultValues?.initRate ?? 0),
+      financYear: defaultValues?.financYear
+        ? defaultValues.financYear.substring(0, 10)
         : '',
+      baseId: defaultValues?.baseId != null ? String(defaultValues.baseId) : '',
+      ocrCode: defaultValues?.ocrCode ?? '',
     },
   })
 
   function handleValidSubmit(raw: ScenarioFormRaw) {
     onSubmit({
       name: raw.name,
-      initialRatioPercentage: Number(raw.initialRatioPercentage.trim()),
-      additionalRatioPercentage: Number(raw.additionalRatioPercentage.trim()),
-      startOfFiscalYear: raw.startOfFiscalYear,
+      initRate: Number(raw.initRate.trim()),
+      financYear: raw.financYear,
+      baseId: raw.baseId ? Number(raw.baseId) : null,
+      ocrCode: raw.ocrCode?.trim() || null,
     })
   }
+
+  const availableBases = scenarios?.filter(
+    (s) => s.absId !== defaultValues?.absId
+  ) ?? []
 
   return (
     <Form {...form}>
@@ -77,25 +89,18 @@ export function ScenarioForm({ defaultValues, onSubmit, onCancel, isLoading }: S
             <FormMessage />
           </FormItem>
         )} />
-        <FormField control={form.control} name="initialRatioPercentage" render={({ field }) => (
+
+        <FormField control={form.control} name="initRate" render={({ field }) => (
           <FormItem>
             <FormLabel>Ratio Inicial (%)</FormLabel>
             <FormControl>
-              <Input type="number" step="0.01" {...field} />
+              <Input type="number" step="0.01" min="0" max="100" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
         )} />
-        <FormField control={form.control} name="additionalRatioPercentage" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Ratio Adicional (%)</FormLabel>
-            <FormControl>
-              <Input type="number" step="0.01" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-        <FormField control={form.control} name="startOfFiscalYear" render={({ field }) => (
+
+        <FormField control={form.control} name="financYear" render={({ field }) => (
           <FormItem>
             <FormLabel>Inicio Año Fiscal</FormLabel>
             <FormControl>
@@ -104,6 +109,42 @@ export function ScenarioForm({ defaultValues, onSubmit, onCancel, isLoading }: S
             <FormMessage />
           </FormItem>
         )} />
+
+        <FormField control={form.control} name="baseId" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Escenario Base (opcional)</FormLabel>
+            <Select
+              value={field.value ?? ''}
+              onValueChange={field.onChange}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin escenario base" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="">Sin escenario base</SelectItem>
+                {availableBases.map((s) => (
+                  <SelectItem key={s.absId} value={String(s.absId)}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="ocrCode" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Código OCR (opcional)</FormLabel>
+            <FormControl>
+              <Input placeholder="OCR-001" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
             Cancelar

@@ -60,25 +60,33 @@ export function ScenarioDetailPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               Información del Escenario
-              <Badge variant="secondary">#{scenario.numerator}</Badge>
+              <Badge variant="secondary">#{scenario.absId}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Ratio Inicial</dt>
-                <dd className="font-medium">{scenario.initialRatioPercentage}%</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Ratio Adicional</dt>
-                <dd className="font-medium">{scenario.additionalRatioPercentage}%</dd>
+                <dd className="font-medium">{scenario.initRate ?? 0}%</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Inicio Año Fiscal</dt>
                 <dd className="font-medium">
-                  {new Date(scenario.startOfFiscalYear).toLocaleDateString('es-ES')}
+                  {new Date(scenario.financYear).toLocaleDateString('es-ES')}
                 </dd>
               </div>
+              {scenario.baseId != null && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Escenario Base</dt>
+                  <dd className="font-medium">#{scenario.baseId}</dd>
+                </div>
+              )}
+              {scenario.ocrCode && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Código OCR</dt>
+                  <dd className="font-medium">{scenario.ocrCode}</dd>
+                </div>
+              )}
             </dl>
           </CardContent>
         </Card>

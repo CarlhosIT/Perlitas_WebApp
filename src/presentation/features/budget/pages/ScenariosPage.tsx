@@ -23,18 +23,18 @@ export function ScenariosPage() {
   const [editTarget, setEditTarget] = useState<BudgetScenario | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BudgetScenario | null>(null)
 
-  const updateMutation = useUpdateScenario(editTarget?.numerator ?? 0)
+  const updateMutation = useUpdateScenario(editTarget?.absId ?? 0)
 
   function handleSubmit(values: ScenarioFormValues) {
-    const isoDate = new Date(values.startOfFiscalYear).toISOString()
+    const isoDate = new Date(values.financYear).toISOString()
     if (editTarget) {
       updateMutation.mutate(
-        { ...values, numerator: editTarget.numerator, startOfFiscalYear: isoDate },
+        { ...values, absId: editTarget.absId, financYear: isoDate },
         { onSuccess: () => { setFormOpen(false); setEditTarget(null) } }
       )
     } else {
       createMutation.mutate(
-        { ...values, startOfFiscalYear: isoDate },
+        { ...values, financYear: isoDate },
         { onSuccess: () => setFormOpen(false) }
       )
     }
@@ -51,7 +51,7 @@ export function ScenariosPage() {
 
   function confirmDelete() {
     if (!deleteTarget) return
-    deleteMutation.mutate(deleteTarget.numerator, {
+    deleteMutation.mutate(deleteTarget.absId, {
       onSuccess: () => setDeleteTarget(null),
     })
   }
@@ -80,7 +80,7 @@ export function ScenariosPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {(scenarios ?? []).map((s) => (
             <ScenarioCard
-              key={s.numerator}
+              key={s.absId}
               scenario={s}
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -113,6 +113,7 @@ export function ScenariosPage() {
           )}
           <ScenarioForm
             defaultValues={editTarget ?? undefined}
+            scenarios={scenarios ?? []}
             onSubmit={handleSubmit}
             onCancel={() => { setFormOpen(false); setEditTarget(null) }}
             isLoading={createMutation.isPending || updateMutation.isPending}

@@ -4,21 +4,22 @@ import type {
   CreateScenarioCommand,
   UpdateScenarioCommand,
 } from '@/domain/budget/BudgetScenario.types'
+import type { HttpResponse, PageWrapper } from '@/domain/shared/HttpResponse.types'
 import { apiClient } from '../http/apiClient'
 
 class BudgetRepositoryImpl implements IBudgetRepository {
   async getAll(): Promise<BudgetScenario[]> {
-    const { data } = await apiClient.get<{ data: BudgetScenario[] }>('/Budget/scenarios')
-    return data.data ?? []
+    const { data } = await apiClient.get<HttpResponse<PageWrapper<BudgetScenario>>>('/Budget/scenarios')
+    return data.data?.data ?? []
   }
 
   async getById(id: number): Promise<BudgetScenario> {
-    const { data } = await apiClient.get<{ data: BudgetScenario }>(`/Budget/scenarios/${id}`)
+    const { data } = await apiClient.get<HttpResponse<BudgetScenario>>(`/Budget/scenarios/${id}`)
     return data.data
   }
 
   async create(command: CreateScenarioCommand): Promise<BudgetScenario> {
-    const { data } = await apiClient.post<{ data: BudgetScenario }>('/Budget/scenarios', command)
+    const { data } = await apiClient.post<HttpResponse<BudgetScenario>>('/Budget/scenarios', command)
     return data.data
   }
 

@@ -1,22 +1,24 @@
 export interface BudgetScenario {
-  numerator: number
+  absId: number
   name: string
-  initialRatioPercentage: number
-  additionalRatioPercentage: number
-  startOfFiscalYear: string
+  baseId: number | null
+  initRate: number | null
+  financYear: string
+  ocrCode: string | null
 }
 
 export interface CreateScenarioCommand {
   name: string
-  initialRatioPercentage: number
-  additionalRatioPercentage: number
-  startOfFiscalYear: string
+  initRate: number
+  financYear: string
+  baseId: number | null
+  ocrCode: string | null
 }
 
 export interface UpdateScenarioCommand {
-  numerator: number
+  absId: number
   name: string
-  initialRatioPercentage: number
-  additionalRatioPercentage: number
-  startOfFiscalYear: string
+  initRate: number
+  financYear: string
+  ocrCode: string | null
 }

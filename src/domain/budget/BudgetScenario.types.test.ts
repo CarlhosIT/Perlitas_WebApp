@@ -3,18 +3,18 @@ import type { BudgetScenario, CreateScenarioCommand, UpdateScenarioCommand } fro
 
 describe('BudgetScenario types', () => {
   it('BudgetScenario tiene los campos requeridos', () => {
-    expectTypeOf<BudgetScenario>().toHaveProperty('numerator')
+    expectTypeOf<BudgetScenario>().toHaveProperty('absId')
     expectTypeOf<BudgetScenario>().toHaveProperty('name')
-    expectTypeOf<BudgetScenario>().toHaveProperty('initialRatioPercentage')
-    expectTypeOf<BudgetScenario>().toHaveProperty('additionalRatioPercentage')
-    expectTypeOf<BudgetScenario>().toHaveProperty('startOfFiscalYear')
+    expectTypeOf<BudgetScenario>().toHaveProperty('initRate')
+    expectTypeOf<BudgetScenario>().toHaveProperty('financYear')
+    expectTypeOf<BudgetScenario>().toHaveProperty('baseId')
   })
 
-  it('CreateScenarioCommand no incluye numerator', () => {
-    expectTypeOf<CreateScenarioCommand>().not.toHaveProperty('numerator')
+  it('CreateScenarioCommand no incluye absId', () => {
+    expectTypeOf<CreateScenarioCommand>().not.toHaveProperty('absId')
   })
 
-  it('UpdateScenarioCommand incluye numerator', () => {
-    expectTypeOf<UpdateScenarioCommand>().toHaveProperty('numerator')
+  it('UpdateScenarioCommand incluye absId', () => {
+    expectTypeOf<UpdateScenarioCommand>().toHaveProperty('absId')
   })
 })
