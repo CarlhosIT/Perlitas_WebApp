@@ -10,7 +10,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/presentation/components/ui/select'
+import { useCostCenters } from '@/core/finance'
 import type { BudgetScenario } from '@/domain/budget/BudgetScenario.types'
+
+const COST_CENTER_DIM_CODE = 4
 
 const scenarioSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -23,6 +26,7 @@ const scenarioSchema = z.object({
   financYear: z.string().min(1, 'La fecha de inicio es requerida'),
   baseId: z.string().optional(),
   ocrCode: z.string().optional(),
+  costCenterCode: z.string().optional(),
 })
 
 type ScenarioFormRaw = z.infer<typeof scenarioSchema>
@@ -33,6 +37,7 @@ export interface ScenarioFormValues {
   financYear: string
   baseId: number | null
   ocrCode: string | null
+  costCenterCode: string | null
 }
 
 interface ScenarioFormProps {
@@ -60,6 +65,7 @@ export function ScenarioForm({
         : '',
       baseId: defaultValues?.baseId != null ? String(defaultValues.baseId) : '',
       ocrCode: defaultValues?.ocrCode ?? '',
+      costCenterCode: defaultValues?.costCenterCode ?? '',
     },
   })
 
@@ -70,12 +76,18 @@ export function ScenarioForm({
       financYear: raw.financYear,
       baseId: raw.baseId ? Number(raw.baseId) : null,
       ocrCode: raw.ocrCode?.trim() || null,
+      costCenterCode: raw.costCenterCode || null,
     })
   }
 
   const availableBases = scenarios?.filter(
     (s) => s.absId !== defaultValues?.absId
   ) ?? []
+
+  const { data: costCentersPage } = useCostCenters({ pageNumber: 1, pageSize: 500 })
+  const costCenters = (costCentersPage?.data ?? []).filter(
+    (cc) => cc.dimCode === COST_CENTER_DIM_CODE && cc.code
+  )
 
   return (
     <Form {...form}>
@@ -141,6 +153,31 @@ export function ScenarioForm({
             <FormControl>
               <Input placeholder="OCR-001" {...field} />
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="costCenterCode" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Centro de Costos (opcional)</FormLabel>
+            <Select
+              value={field.value ?? ''}
+              onValueChange={field.onChange}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin centro de costos" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="">Sin centro de costos</SelectItem>
+                {costCenters.map((cc) => (
+                  <SelectItem key={cc.code} value={cc.code as string}>
+                    {cc.code} - {cc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )} />
