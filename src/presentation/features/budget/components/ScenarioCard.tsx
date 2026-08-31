@@ -1,24 +1,41 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Pencil, Trash2, Eye } from 'lucide-react'
+import { Pencil, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/presentation/components/ui/card'
 import { Button } from '@/presentation/components/ui/button'
 import { Badge } from '@/presentation/components/ui/badge'
 import type { BudgetScenario } from '@/domain/budget/BudgetScenario.types'
+import type { ScenarioTreeNode } from '../utils/buildScenarioTree'
 
 interface ScenarioCardProps {
-  scenario: BudgetScenario
+  scenario: ScenarioTreeNode
   onEdit: (scenario: BudgetScenario) => void
   onDelete: (scenario: BudgetScenario) => void
 }
 
 export function ScenarioCard({ scenario, onEdit, onDelete }: ScenarioCardProps) {
   const navigate = useNavigate()
+  const [expanded, setExpanded] = useState(false)
+  const hasChildren = scenario.children.length > 0
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-base">{scenario.name}</CardTitle>
+          <div className="flex items-center gap-1 min-w-0">
+            {hasChildren && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() => setExpanded((v) => !v)}
+                aria-label={expanded ? 'Colapsar hijos' : 'Desplegar hijos'}
+              >
+                {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+            )}
+            <CardTitle className="text-base truncate">{scenario.name}</CardTitle>
+          </div>
           <Badge variant="secondary">#{scenario.absId}</Badge>
         </div>
       </CardHeader>
@@ -48,6 +65,19 @@ export function ScenarioCard({ scenario, onEdit, onDelete }: ScenarioCardProps) 
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
           </Button>
         </div>
+
+        {hasChildren && expanded && (
+          <div className="space-y-3 pt-1 pl-3 border-l">
+            {scenario.children.map((child) => (
+              <ScenarioCard
+                key={child.absId}
+                scenario={child}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

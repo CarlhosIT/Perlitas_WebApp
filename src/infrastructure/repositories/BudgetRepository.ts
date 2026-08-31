@@ -8,8 +8,10 @@ import type { HttpResponse, PageWrapper } from '@/domain/shared/HttpResponse.typ
 import { apiClient } from '../http/apiClient'
 
 class BudgetRepositoryImpl implements IBudgetRepository {
-  async getAll(): Promise<BudgetScenario[]> {
-    const { data } = await apiClient.get<HttpResponse<PageWrapper<BudgetScenario>>>('/Budget/scenarios')
+  async getAll(filter?: string): Promise<BudgetScenario[]> {
+    const { data } = await apiClient.get<HttpResponse<PageWrapper<BudgetScenario>>>('/Budget/scenarios', {
+      params: { Filter: filter },
+    })
     return data.data?.data ?? []
   }
 

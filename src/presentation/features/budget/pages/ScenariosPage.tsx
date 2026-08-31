@@ -1,23 +1,33 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/presentation/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/dialog'
 import { Alert, AlertDescription } from '@/presentation/components/ui/alert'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/presentation/components/ui/select'
 import { PageHeader } from '@/presentation/components/shared/PageHeader/PageHeader'
 import { ConfirmDialog } from '@/presentation/components/shared/ConfirmDialog/ConfirmDialog'
 import { ScenarioCard } from '../components/ScenarioCard'
 import { ScenarioForm } from '../components/ScenarioForm'
 import type { ScenarioFormValues } from '../components/ScenarioForm'
+import { buildScenarioTree } from '../utils/buildScenarioTree'
 import {
   useGetScenarios, useCreateScenario,
   useUpdateScenario, useDeleteScenario,
 } from '@/core/budget'
 import type { BudgetScenario } from '@/domain/budget/BudgetScenario.types'
 
+const CURRENT_YEAR = new Date().getFullYear()
+const YEAR_OPTIONS = Array.from({ length: 8 }, (_, i) => CURRENT_YEAR - 5 + i)
+
 export function ScenariosPage() {
-  const { data: scenarios, isLoading, error } = useGetScenarios()
+  const [year, setYear] = useState(CURRENT_YEAR)
+  const { data: scenarios, isLoading, error } = useGetScenarios(year)
   const createMutation = useCreateScenario()
   const deleteMutation = useDeleteScenario()
+
+  const scenarioTree = useMemo(() => buildScenarioTree(scenarios ?? []), [scenarios])
 
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<BudgetScenario | null>(null)
@@ -62,9 +72,21 @@ export function ScenariosPage() {
         title="Escenarios de Presupuesto"
         description="Gestiona los escenarios para la planificación financiera"
         actions={
-          <Button onClick={() => { setEditTarget(null); setFormOpen(true) }}>
-            <Plus className="h-4 w-4 mr-2" /> Nuevo Escenario
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {YEAR_OPTIONS.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={() => { setEditTarget(null); setFormOpen(true) }}>
+              <Plus className="h-4 w-4 mr-2" /> Nuevo Escenario
+            </Button>
+          </div>
         }
       />
 
@@ -78,7 +100,7 @@ export function ScenariosPage() {
         <p className="text-muted-foreground">Cargando escenarios...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(scenarios ?? []).map((s) => (
+          {scenarioTree.map((s) => (
             <ScenarioCard
               key={s.absId}
               scenario={s}
@@ -86,9 +108,9 @@ export function ScenariosPage() {
               onDelete={handleDelete}
             />
           ))}
-          {scenarios?.length === 0 && (
+          {scenarioTree.length === 0 && (
             <p className="col-span-full text-muted-foreground">
-              No hay escenarios creados aún.
+              No hay escenarios para el año {year}.
             </p>
           )}
         </div>
