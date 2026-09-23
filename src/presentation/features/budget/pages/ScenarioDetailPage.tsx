@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/presentation/components/ui/button'
@@ -5,31 +6,66 @@ import { Alert, AlertDescription } from '@/presentation/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/presentation/components/ui/card'
 import { Badge } from '@/presentation/components/ui/badge'
 import { PageHeader } from '@/presentation/components/shared/PageHeader/PageHeader'
+import { ConfirmDialog } from '@/presentation/components/shared/ConfirmDialog/ConfirmDialog'
 import { ScenarioUpload } from '../components/ScenarioUpload'
+import { ScenarioJobStatus } from '../components/ScenarioJobStatus'
+import { costCenterByCodeFilter } from '../utils/costCenterFilters'
 import {
   useGetScenario, useUploadLines,
-  useImportBudget, useDownloadTemplate,
+  useDownloadTemplate, useScenarioJobs, getLatestJob,
 } from '@/core/budget'
+import { useCostCenters } from '@/core/finance'
 
 export function ScenarioDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const scenarioId = Number(id)
+  const isValidId = !isNaN(scenarioId) && scenarioId > 0
 
-  if (isNaN(scenarioId) || scenarioId <= 0) {
-    return <Navigate to="/scenarios" replace />
-  }
-
-  const { data: scenario, isLoading, error } = useGetScenario(scenarioId)
+  const { data: scenario, isLoading, error } = useGetScenario(isValidId ? scenarioId : 0)
   const uploadLinesMutation = useUploadLines(scenarioId)
-  const importMutation = useImportBudget()
-  const downloadMutation = useDownloadTemplate()
+  const downloadMutation = useDownloadTemplate(scenarioId)
+  const { data: jobs, isLoading: isJobsLoading } = useScenarioJobs(isValidId ? scenarioId : 0)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+
+  // Solo admiten carga de líneas los escenarios cuyo centro de costos es de la
+  // dimensión 4: los escenarios raíz no tienen centro, así que quedan fuera.
+  const ocrCode = scenario?.ocrCode ?? ''
+  const dimensionQuery = useCostCenters(
+    {
+      pageNumber: 1,
+      pageSize: 10,
+      filter: ocrCode !== '' ? costCenterByCodeFilter(ocrCode) : undefined,
+    },
+    { enabled: ocrCode !== '' }
+  )
+  const isCheckingDimension = ocrCode !== '' && dimensionQuery.isLoading
+  const canUploadLines =
+    ocrCode !== '' && (dimensionQuery.data?.data?.length ?? 0) > 0
 
   const uploadError =
     (uploadLinesMutation.error as Error | null)?.message ??
-    (importMutation.error as Error | null)?.message ??
     (downloadMutation.error as Error | null)?.message ??
+    (dimensionQuery.error as Error | null)?.message ??
     null
+
+  function handleUploadRequest(file: File) {
+    if (scenario && scenario.initRate != null && scenario.initRate !== 100) {
+      setPendingFile(file)
+    } else {
+      uploadLinesMutation.mutate(file)
+    }
+  }
+
+  function confirmUpload() {
+    if (!pendingFile) return
+    uploadLinesMutation.mutate(pendingFile)
+    setPendingFile(null)
+  }
+
+  if (!isValidId) {
+    return <Navigate to="/scenarios" replace />
+  }
 
   if (isLoading) return <p className="text-muted-foreground">Cargando...</p>
 
@@ -83,7 +119,7 @@ export function ScenarioDetailPage() {
               )}
               {scenario.ocrCode && (
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Código OCR</dt>
+                  <dt className="text-muted-foreground">Centro de Costos</dt>
                   <dd className="font-medium">{scenario.ocrCode}</dd>
                 </div>
               )}
@@ -91,16 +127,31 @@ export function ScenarioDetailPage() {
           </CardContent>
         </Card>
 
-        <ScenarioUpload
-          onUploadLines={(file) => uploadLinesMutation.mutate(file)}
-          onImportBudget={(file) => importMutation.mutate(file)}
-          onDownloadTemplate={() => downloadMutation.mutate()}
-          isUploading={uploadLinesMutation.isPending}
-          isImporting={importMutation.isPending}
-          isDownloading={downloadMutation.isPending}
-          error={uploadError}
-        />
+        <div className="space-y-6">
+          <ScenarioUpload
+            onUploadLines={handleUploadRequest}
+            onDownloadTemplate={() => downloadMutation.mutate()}
+            isUploading={uploadLinesMutation.isPending}
+            isDownloading={downloadMutation.isPending}
+            error={uploadError}
+            canUploadLines={canUploadLines}
+            isCheckingUploadPermission={isCheckingDimension}
+          />
+          <ScenarioJobStatus job={getLatestJob(jobs)} isLoading={isJobsLoading} />
+        </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingFile != null}
+        variant="default"
+        title="Ratio inicial distinto de 100%"
+        description={`Este escenario tiene un ratio inicial del ${scenario.initRate}%. Los valores que subas quedarán al ${scenario.initRate}% de lo que contiene el Excel. ¿Seguro que quieres continuar?`}
+        confirmLabel="Sí, continuar"
+        loadingLabel="Subiendo..."
+        onConfirm={confirmUpload}
+        onCancel={() => setPendingFile(null)}
+        isLoading={uploadLinesMutation.isPending}
+      />
     </div>
   )
 }

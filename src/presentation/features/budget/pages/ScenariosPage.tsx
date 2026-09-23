@@ -8,18 +8,16 @@ import {
 } from '@/presentation/components/ui/select'
 import { PageHeader } from '@/presentation/components/shared/PageHeader/PageHeader'
 import { ConfirmDialog } from '@/presentation/components/shared/ConfirmDialog/ConfirmDialog'
-import { ScenarioCard } from '../components/ScenarioCard'
+import { ScenarioTable } from '../components/ScenarioTable'
 import { ScenarioForm } from '../components/ScenarioForm'
 import type { ScenarioFormValues } from '../components/ScenarioForm'
 import { buildScenarioTree } from '../utils/buildScenarioTree'
+import { CURRENT_YEAR, YEAR_OPTIONS } from '../utils/yearOptions'
 import {
   useGetScenarios, useCreateScenario,
   useUpdateScenario, useDeleteScenario,
 } from '@/core/budget'
 import type { BudgetScenario } from '@/domain/budget/BudgetScenario.types'
-
-const CURRENT_YEAR = new Date().getFullYear()
-const YEAR_OPTIONS = Array.from({ length: 8 }, (_, i) => CURRENT_YEAR - 5 + i)
 
 export function ScenariosPage() {
   const [year, setYear] = useState(CURRENT_YEAR)
@@ -31,23 +29,35 @@ export function ScenariosPage() {
 
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<BudgetScenario | null>(null)
+  const [createParent, setCreateParent] = useState<BudgetScenario | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BudgetScenario | null>(null)
 
   const updateMutation = useUpdateScenario(editTarget?.absId ?? 0)
 
   function handleSubmit(values: ScenarioFormValues) {
-    const isoDate = new Date(values.financYear).toISOString()
     if (editTarget) {
       updateMutation.mutate(
-        { ...values, absId: editTarget.absId, financYear: isoDate },
+        { ...values, absId: editTarget.absId },
         { onSuccess: () => { setFormOpen(false); setEditTarget(null) } }
       )
     } else {
       createMutation.mutate(
-        { ...values, financYear: isoDate },
-        { onSuccess: () => setFormOpen(false) }
+        { ...values, baseId: createParent?.absId ?? null },
+        { onSuccess: () => { setFormOpen(false); setCreateParent(null) } }
       )
     }
+  }
+
+  function handleCreateRoot() {
+    setEditTarget(null)
+    setCreateParent(null)
+    setFormOpen(true)
+  }
+
+  function handleCreateChild(parent: BudgetScenario) {
+    setEditTarget(null)
+    setCreateParent(parent)
+    setFormOpen(true)
   }
 
   function handleEdit(scenario: BudgetScenario) {
@@ -66,6 +76,12 @@ export function ScenariosPage() {
     })
   }
 
+  const dialogTitle = editTarget
+    ? 'Editar Escenario'
+    : createParent
+      ? `Nuevo Sub-Escenario de "${createParent.name}"`
+      : 'Nuevo Escenario'
+
   return (
     <div>
       <PageHeader
@@ -83,7 +99,7 @@ export function ScenariosPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={() => { setEditTarget(null); setFormOpen(true) }}>
+            <Button onClick={handleCreateRoot}>
               <Plus className="h-4 w-4 mr-2" /> Nuevo Escenario
             </Button>
           </div>
@@ -99,32 +115,21 @@ export function ScenariosPage() {
       {isLoading ? (
         <p className="text-muted-foreground">Cargando escenarios...</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {scenarioTree.map((s) => (
-            <ScenarioCard
-              key={s.absId}
-              scenario={s}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-          {scenarioTree.length === 0 && (
-            <p className="col-span-full text-muted-foreground">
-              No hay escenarios para el año {year}.
-            </p>
-          )}
-        </div>
+        <ScenarioTable
+          scenarios={scenarioTree}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onCreateChild={handleCreateChild}
+        />
       )}
 
       <Dialog
         open={formOpen}
-        onOpenChange={(v) => { if (!v) { setFormOpen(false); setEditTarget(null) } }}
+        onOpenChange={(v) => { if (!v) { setFormOpen(false); setEditTarget(null); setCreateParent(null) } }}
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {editTarget ? 'Editar Escenario' : 'Nuevo Escenario'}
-            </DialogTitle>
+            <DialogTitle>{dialogTitle}</DialogTitle>
           </DialogHeader>
           {(createMutation.error || updateMutation.error) && (
             <Alert variant="destructive" className="mb-2">
@@ -135,9 +140,9 @@ export function ScenariosPage() {
           )}
           <ScenarioForm
             defaultValues={editTarget ?? undefined}
-            scenarios={scenarios ?? []}
+            parentYear={createParent ? new Date(createParent.financYear).getFullYear() : undefined}
             onSubmit={handleSubmit}
-            onCancel={() => { setFormOpen(false); setEditTarget(null) }}
+            onCancel={() => { setFormOpen(false); setEditTarget(null); setCreateParent(null) }}
             isLoading={createMutation.isPending || updateMutation.isPending}
           />
         </DialogContent>

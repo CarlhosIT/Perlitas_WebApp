@@ -1,6 +1,6 @@
 // src/presentation/components/shared/Layout/AppLayout.tsx
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, Building2, LogOut, User } from 'lucide-react'
+import { LayoutDashboard, BookOpen, LogOut, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth, useLogout } from '@/core/auth'
 import { Button } from '@/presentation/components/ui/button'
@@ -9,7 +9,6 @@ import logo from '@/assets/logo.png'
 const navItems = [
   { to: '/scenarios', label: 'Escenarios', icon: LayoutDashboard },
   { to: '/accounts', label: 'Cuentas', icon: BookOpen },
-  { to: '/cost-centers', label: 'Centros de Costo', icon: Building2 },
 ]
 
 export function AppLayout() {

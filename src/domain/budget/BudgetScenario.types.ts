@@ -5,23 +5,20 @@ export interface BudgetScenario {
   initRate: number | null
   financYear: string
   ocrCode: string | null
-  costCenterCode: string | null
 }
 
 export interface CreateScenarioCommand {
   name: string
   initRate: number
-  financYear: string
+  financYear: number
   baseId: number | null
   ocrCode: string | null
-  costCenterCode: string | null
 }
 
 export interface UpdateScenarioCommand {
   absId: number
   name: string
   initRate: number
-  financYear: string
+  financYear: number
   ocrCode: string | null
-  costCenterCode: string | null
 }

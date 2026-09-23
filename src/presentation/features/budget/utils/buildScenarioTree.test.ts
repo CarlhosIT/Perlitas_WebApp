@@ -9,7 +9,6 @@ function scenario(overrides: Partial<BudgetScenario> & { absId: number }): Budge
     initRate: 0,
     financYear: '2026-01-01',
     ocrCode: null,
-    costCenterCode: null,
     ...overrides,
   }
 }
@@ -56,5 +55,30 @@ describe('buildScenarioTree', () => {
     const tree = buildScenarioTree(scenarios)
     expect(tree).toHaveLength(1)
     expect(tree[0].absId).toBe(2)
+  })
+
+  it('trata como raíz a un escenario cuyo baseId apunta a sí mismo', () => {
+    const scenarios = [
+      scenario({ absId: 8, baseId: 8 }),
+      scenario({ absId: 9, baseId: 8 }),
+    ]
+    const tree = buildScenarioTree(scenarios)
+    expect(tree).toHaveLength(1)
+    expect(tree[0].absId).toBe(8)
+    expect(tree[0].children).toHaveLength(1)
+    expect(tree[0].children[0].absId).toBe(9)
+  })
+
+  it('con dos escenarios auto-referenciados, ambos quedan como raíces independientes', () => {
+    const scenarios = [
+      scenario({ absId: 8, baseId: 8 }),
+      scenario({ absId: 9, baseId: 11 }),
+      scenario({ absId: 10, baseId: 11 }),
+      scenario({ absId: 11, baseId: 11 }),
+    ]
+    const tree = buildScenarioTree(scenarios)
+    expect(tree.map((n) => n.absId).sort((a, b) => a - b)).toEqual([8, 11])
+    const root11 = tree.find((n) => n.absId === 11)!
+    expect(root11.children.map((c) => c.absId).sort((a, b) => a - b)).toEqual([9, 10])
   })
 })

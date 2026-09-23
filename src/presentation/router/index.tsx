@@ -6,7 +6,6 @@ import { LoginPage } from '@/presentation/features/auth/pages/LoginPage'
 import { ScenariosPage } from '@/presentation/features/budget/pages/ScenariosPage'
 import { ScenarioDetailPage } from '@/presentation/features/budget/pages/ScenarioDetailPage'
 import { AccountsPage } from '@/presentation/features/accounts/pages/AccountsPage'
-import { CostCentersPage } from '@/presentation/features/cost-centers/pages/CostCentersPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -21,7 +20,6 @@ export const router = createBrowserRouter([
           { path: 'scenarios', element: <ScenariosPage /> },
           { path: 'scenarios/:id', element: <ScenarioDetailPage /> },
           { path: 'accounts', element: <AccountsPage /> },
-          { path: 'cost-centers', element: <CostCentersPage /> },
         ],
       },
     ],

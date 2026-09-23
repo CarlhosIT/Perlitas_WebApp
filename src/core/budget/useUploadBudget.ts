@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { budgetRepository } from '@/infrastructure/repositories/BudgetRepository'
-import { SCENARIOS_QUERY_KEY } from './useGetScenarios'
+import { SCENARIO_JOBS_QUERY_KEY } from './useScenarioJobs'
 
 export function useUploadLines(scenarioId: number) {
   const queryClient = useQueryClient()
@@ -8,23 +8,14 @@ export function useUploadLines(scenarioId: number) {
     mutationFn: (file: File) => budgetRepository.uploadLines(scenarioId, file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scenarios', scenarioId] })
+      queryClient.invalidateQueries({ queryKey: [SCENARIO_JOBS_QUERY_KEY, scenarioId] })
     },
   })
 }
 
-export function useImportBudget() {
-  const queryClient = useQueryClient()
+export function useDownloadTemplate(scenarioId: number) {
   return useMutation({
-    mutationFn: (file: File) => budgetRepository.importBudget(file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SCENARIOS_QUERY_KEY })
-    },
-  })
-}
-
-export function useDownloadTemplate() {
-  return useMutation({
-    mutationFn: () => budgetRepository.downloadTemplate(),
+    mutationFn: () => budgetRepository.downloadTemplate(scenarioId),
     onSuccess: (blob) => {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')

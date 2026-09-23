@@ -11,9 +11,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/presentation/components/ui/select'
 import { useCostCenters } from '@/core/finance'
+import { CURRENT_YEAR, YEAR_OPTIONS } from '../utils/yearOptions'
+import { COST_CENTER_DIM_FILTER } from '../utils/costCenterFilters'
 import type { BudgetScenario } from '@/domain/budget/BudgetScenario.types'
 
-const COST_CENTER_DIM_CODE = 4
 
 const scenarioSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -21,12 +22,9 @@ const scenarioSchema = z.object({
     .string()
     .min(1, 'El ratio es requerido')
     .refine((v) => !isNaN(Number(v.trim())) && v.trim() !== '', 'Debe ser un número')
-    .refine((v) => Number(v.trim()) >= 0, 'Mínimo 0')
-    .refine((v) => Number(v.trim()) <= 100, 'Máximo 100'),
-  financYear: z.string().min(1, 'La fecha de inicio es requerida'),
-  baseId: z.string().optional(),
+    .refine((v) => Number(v.trim()) >= 0, 'Mínimo 0'),
+  financYear: z.string().min(1, 'El año fiscal es requerido'),
   ocrCode: z.string().optional(),
-  costCenterCode: z.string().optional(),
 })
 
 type ScenarioFormRaw = z.infer<typeof scenarioSchema>
@@ -34,15 +32,13 @@ type ScenarioFormRaw = z.infer<typeof scenarioSchema>
 export interface ScenarioFormValues {
   name: string
   initRate: number
-  financYear: string
-  baseId: number | null
+  financYear: number
   ocrCode: string | null
-  costCenterCode: string | null
 }
 
 interface ScenarioFormProps {
   defaultValues?: Partial<BudgetScenario>
-  scenarios?: BudgetScenario[]
+  parentYear?: number
   onSubmit: (values: ScenarioFormValues) => void
   onCancel: () => void
   isLoading?: boolean
@@ -50,7 +46,7 @@ interface ScenarioFormProps {
 
 export function ScenarioForm({
   defaultValues,
-  scenarios,
+  parentYear,
   onSubmit,
   onCancel,
   isLoading,
@@ -60,12 +56,12 @@ export function ScenarioForm({
     defaultValues: {
       name: defaultValues?.name ?? '',
       initRate: String(defaultValues?.initRate ?? 0),
-      financYear: defaultValues?.financYear
-        ? defaultValues.financYear.substring(0, 10)
-        : '',
-      baseId: defaultValues?.baseId != null ? String(defaultValues.baseId) : '',
+      financYear: parentYear != null
+        ? String(parentYear)
+        : defaultValues?.financYear
+          ? String(new Date(defaultValues.financYear).getFullYear())
+          : String(CURRENT_YEAR),
       ocrCode: defaultValues?.ocrCode ?? '',
-      costCenterCode: defaultValues?.costCenterCode ?? '',
     },
   })
 
@@ -73,21 +69,17 @@ export function ScenarioForm({
     onSubmit({
       name: raw.name,
       initRate: Number(raw.initRate.trim()),
-      financYear: raw.financYear,
-      baseId: raw.baseId ? Number(raw.baseId) : null,
-      ocrCode: raw.ocrCode?.trim() || null,
-      costCenterCode: raw.costCenterCode || null,
+      financYear: Number(raw.financYear),
+      ocrCode: raw.ocrCode || null,
     })
   }
 
-  const availableBases = scenarios?.filter(
-    (s) => s.absId !== defaultValues?.absId
-  ) ?? []
-
-  const { data: costCentersPage } = useCostCenters({ pageNumber: 1, pageSize: 500 })
-  const costCenters = (costCentersPage?.data ?? []).filter(
-    (cc) => cc.dimCode === COST_CENTER_DIM_CODE && cc.code
-  )
+  const { data: costCentersPage } = useCostCenters({
+    pageNumber: 1,
+    pageSize: 500,
+    filter: COST_CENTER_DIM_FILTER,
+  })
+  const costCenters = (costCentersPage?.data ?? []).filter((cc) => cc.code)
 
   return (
     <Form {...form}>
@@ -106,7 +98,7 @@ export function ScenarioForm({
           <FormItem>
             <FormLabel>Ratio Inicial (%)</FormLabel>
             <FormControl>
-              <Input type="number" step="0.01" min="0" max="100" {...field} />
+              <Input type="number" step="0.01" min="0" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -114,32 +106,21 @@ export function ScenarioForm({
 
         <FormField control={form.control} name="financYear" render={({ field }) => (
           <FormItem>
-            <FormLabel>Inicio Año Fiscal</FormLabel>
-            <FormControl>
-              <Input type="date" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={form.control} name="baseId" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Escenario Base (opcional)</FormLabel>
-            <Select
-              value={field.value ?? ''}
-              onValueChange={field.onChange}
-            >
+            <FormLabel>
+              Año Fiscal
+              {parentYear != null && (
+                <span className="text-muted-foreground font-normal"> (igual al del escenario base)</span>
+              )}
+            </FormLabel>
+            <Select value={field.value} onValueChange={field.onChange} disabled={parentYear != null}>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sin escenario base" />
+                  <SelectValue />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="">Sin escenario base</SelectItem>
-                {availableBases.map((s) => (
-                  <SelectItem key={s.absId} value={String(s.absId)}>
-                    {s.name}
-                  </SelectItem>
+                {YEAR_OPTIONS.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -148,16 +129,6 @@ export function ScenarioForm({
         )} />
 
         <FormField control={form.control} name="ocrCode" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Código OCR (opcional)</FormLabel>
-            <FormControl>
-              <Input placeholder="OCR-001" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={form.control} name="costCenterCode" render={({ field }) => (
           <FormItem>
             <FormLabel>Centro de Costos (opcional)</FormLabel>
             <Select
